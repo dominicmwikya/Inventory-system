@@ -16,6 +16,8 @@ import "datatables.net-buttons/js/buttons.flash.js";
 import "datatables.net-buttons/js/buttons.html5.js";
 import "datatables.net-buttons/js/buttons.print.js";
 import $ from "jquery";
+import { ProductAPI } from '../APIs/ProductAPI'
+import { SalesAPI } from '../APIs/SalesAPI'
 function Products() {
     const[products, setProduct]=useState([])
     const [show, setShow] = useState(false);
@@ -38,16 +40,8 @@ function Products() {
     const[editprice, setEditPrice]=useState(0)
     const[sku, setSku]=useState('')
     const[productvalues, setProductValues]=useState({
-      product_name:'',
-      product_category:'',
-      product_sku:'',
-      product_price:'',
-      product_brand:'',
-      product_min_qty:'',
-      product_unit:'',
-      product_qty:'',
-      product_status:'',
-      product_desc:''
+      product_name:'', product_category:'', product_sku:'', product_price:'',product_brand:'',
+      product_min_qty:'', product_unit:'',product_qty:'',product_status:'',product_desc:''
   })
     var date = new Date();
     var formatedDate = `${date.getMonth()+1}-${date.getDate()}-${date.getFullYear()}`
@@ -55,86 +49,13 @@ function Products() {
     useEffect(()=>{
           handleData()
        },[])
-     
+
       const handleData=()=>{
            setTimeout(()=>{
-            axios.get("http://localhost:5000/products", {
-              headers:{userToken:localStorage.getItem("Token")}
-            }).then((response)=>{
-               if(response.data.error){
-                console.log(response.data.error)
-                    swal(response.data.error, {icon:'warning'})
-               }else{
-                setProduct(response.data)
-                if (!$.fn.DataTable.isDataTable("#table")) {
-                  $(function () {
-                    setTimeout(function () {
-                      $("#table").DataTable({
-                        pagingType: "full_numbers",
-                        pageLength: 10,
-                        processing: true,
-                        dom: "Bfrtip",
-                        retrieve: true,
-                        select: {
-                          style: "single",
-                        },
-            
-                        buttons: [
-                          {
-                            extend: "pageLength",
-                            className: "btn btn-secondary bg-secondary",
-                          },
-                          {
-                            extend: "copy",
-                            className: "btn btn-secondary bg-secondary",
-                          },
-                          {
-                            extend: "csv",
-                            className: "btn btn-secondary bg-secondary",
-                          },
-                          {
-                            extend: "print",
-                            customize: function (win) {
-                              $(win.document.body).css("font-size", "10pt");
-                              $(win.document.body)
-                                .find("table")
-                                .addClassName("compact")
-                                .css("font-size", "inherit");
-                            },
-                            className: "btn btn-secondary bg-secondary",
-                          },
-                        ],
-            
-                        fnRowCallback: function (
-                          nRow,
-                          aData,
-                          iDisplayIndex,
-                          iDisplayIndexFull
-                        ) {
-                          var index = iDisplayIndexFull + 1;
-                          $("td:first", nRow).html(index);
-                          return nRow;
-                        },
-            
-                        lengthMenu: [
-                          [10, 20, 30, 50, -1],
-                          [10, 20, 30, 50, "All"],
-                        ],
-                        columnDefs: [
-                          {
-                            targets: 0,
-                            render: function (data, type, row, meta) {
-                              return type === "export" ? meta.row + 1 : data;
-                            },
-                          },
-                        ],
-                      });
-                    }, 5);
-                  });
-                }
-               }
-           })
-           },10)
+            ProductAPI.getAll().then((data)=>{
+              setProduct(data)
+            })
+           },4)
       }
        const delete_product=(id)=>{
         swal({
@@ -146,12 +67,7 @@ function Products() {
         })
         .then((confirmDelete) => {
           if (confirmDelete) {
-            axios.delete(`http://localhost:5000/products/delete/${id}`,{
-              headers:
-              {
-                userToken: localStorage.getItem("Token")
-              }
-            }).then((response)=>{
+            ProductAPI.delete_product(id).then((response)=>{
                 if(response.data){
                   swal(`Poof! ${response.data}`, {
                     icon: "success",
@@ -170,16 +86,10 @@ function Products() {
       }
       const handleSale=(e)=>{
         e.preventDefault()
-       axios.post("http://localhost:5000/sales/create",{ Customer_Name:values.Customer_Name,
-                  Quantity:values.Quantity, 
-                  saleprice:values.saleprice,total:total, amount:values.amount, 
-                  balance:balance, ProductId:Product_id, 
-                  Status:values.Status, Sale_Date:Sale_Date
-        },
-        {
-          headers:{userToken:localStorage.getItem("Token")}
-        }
-        ).then((response)=>{
+        const data={Customer_Name:values.Customer_Name,Quantity:values.Quantity, saleprice:values.saleprice,
+                    total:total, amount:values.amount, balance:balance, ProductId:Product_id, Status:values.Status,
+                    Sale_Date:Sale_Date}
+      SalesAPI.create(data).then((response)=>{
           if(response.data.error){
               swal(response.data.error,{icon:"warning"})
           }if(response.data){
@@ -207,66 +117,46 @@ function Products() {
       })
 
       }
+     
       const onSale= async (p_id)=>{
-             await axios.get(`http://localhost:5000/products/${p_id}` ,{
-              headers:
-              {
-                userToken: localStorage.getItem("Token")
-              }
-            }).then((result)=>{
-              console.log(result)
-                if(result.data[0]){
-                    const data=result.data[0]
-                    setName(data.Name)
-                    setId(data.id)
-                    setUnit(data.unit)
-                    setQty(data.qty)
-                    handleShow()
-                }else{
-                     console.log(result.error)
-                }
+            ProductAPI.get(p_id).then((result)=>{
+              const data=result.data[0];
+              console.log(data)
+              setName(data.Name)
+              setId(data.id)
+              setUnit(data.unit)
+              setQty(data.qty)
+              handleShow()
              })
       }
-      const edit_product=async(id)=>{
-        await axios.get(`http://localhost:5000/products/${id}` ,{
-          headers:
-          {
-            userToken: localStorage.getItem("Token")
+      const edit_product=(id)=>{
+        ProductAPI.get(id).then((result)=>{
+          const data=result.data[0]
+          if(data){ 
+            setQty(data.qty)
+            setName(data.Name)
+            setMinQty(data.min_qty)
+            setEditPrice(data.price)
+            setSku(data.sku)
+            setEditId(data.id)
+            handleEdit()
+          }else{
+            console.log(result.error)
           }
-        }).then((result)=>{
-            if(result.data[0]){
-                const data=result.data[0]
-                handleEdit()
-                setQty(data.qty)
-                setName(data.Name)
-                setMinQty(data.min_qty)
-                setEditPrice(data.price)
-                setSku(data.sku)
-                setEditId(data.id)
-            }else{
-                 console.log(result.error)
-            }
-         })
+        })
       }
       const create_product=()=>{
         handleModalFormShow()
       }
       const updateProduct=(e)=>{
         e.preventDefault()
-           axios.put(`http://localhost:5000/products/update`,{
-            Product_Name:Name,
-            id: ProductId,
-            product_sku:sku,
-            product_price:editprice,
-            product_quantity:qty,
-            minimum_quantity:min_qty
-           },
-           {
-            headers:
-            {
-              userToken: localStorage.getItem("Token")
-            }
-           }).then((resp)=>{
+        const data={  Product_Name:Name,
+          id: ProductId,
+          product_sku:sku,
+          product_price:editprice,
+          product_quantity:qty,
+          minimum_quantity:min_qty}
+          ProductAPI.update(data).then((resp)=>{
               if(resp.data.error){
                  swal(resp.data.error, {icon:'warning'})
               }else{
@@ -310,7 +200,6 @@ const calc_total = (newValues) => {
         setTotal(newTotal)
         const newBalance= newTotal- amount
         setBalance(newBalance)
-        console.log(newValues)
     }  
     const createProductSubmit=(e)=>{
       e.preventDefault()
@@ -399,7 +288,7 @@ const calc_total = (newValues) => {
                 <div className='card' style={{height:'50px'}}>
                 <div className='card-title' style={{marginLeft:'900px' }}> <button className='btn btn-primary' onClick={create_product}>CREATE PRODUCT</button></div>
                   <div className='card-body'>
-                     {/* <div className='col-md-4'><input type="search" className='form-control'/>Search</div> */}
+    
                   </div>
                 </div>
                 <div className='card-body'>

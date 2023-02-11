@@ -1,5 +1,5 @@
 import React from 'react'
-
+import SubmitButton from '../Buttons/SubmitButton'
 export default function AddProductform(props) {
   return (
     <div>
@@ -129,8 +129,8 @@ export default function AddProductform(props) {
                     </div>
                     </div>
                 </div>
-                <button type='submit' className='btn btn-success btn-sm' style={{width:'100px', float:'right', marginLeft:'20px', marginRight:'0px'}}>ADD </button>
-            </form>
+                <SubmitButton type='submit' className='btn btn-success btn-sm' value="Add Product" />
+    </form>
     </div>
   )
 }

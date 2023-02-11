@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import SubmitButton from '../Buttons/SubmitButton'
 export default class AddPurchasesform extends Component {
     constructor(props){
         super(props)
@@ -110,7 +111,7 @@ export default class AddPurchasesform extends Component {
          </div>
         </div>
             <div className='form-group row'>
-            <button className='btn btn-primary' type='submit'>Add Purchase</button>
+            <SubmitButton className="btn btn-primary" type="submit" value="add purchases"/>
             </div>
         </form>
       </div>
